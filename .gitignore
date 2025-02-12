@@ -1,0 +1,26 @@
+echo "## Ignore Python and Django files
+backend/venv/
+backend/__pycache__/
+backend/*.pyc
+backend/db.sqlite3
+backend/media/
+backend/.env
+
+## Ignore Node.js and Next.js files
+frontend/node_modules/
+frontend/.next/
+frontend/.env.local
+frontend/.env.production
+frontend/.env.development
+frontend/.turbo/
+frontend/.vercel/
+
+## Ignore System files
+.DS_Store
+.vscode/
+.idea/
+*.log
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+" > .gitignore
