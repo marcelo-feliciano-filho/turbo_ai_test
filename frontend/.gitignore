@@ -16,6 +16,8 @@
 # next.js
 /.next/
 /out/
+dist/
+.cache/
 
 # production
 /build
@@ -30,6 +32,12 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
+# System Files
+Thumbs.db
+.vscode/
+.idea/
+*.log
+
 # env files (can opt-in for committing if needed)
 .env*
 
@@ -39,3 +47,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Linting
+.eslintcache
+stylelintcache
