@@ -1,18 +1,27 @@
-import type { Config } from "tailwindcss";
+import type { Config } from 'tailwindcss'
 
-export default {
-  content: [
-    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
-  ],
+const config: Config = {
+  content: ["./src/**/*.{js,jsx,ts,tsx}"],
   theme: {
     extend: {
       colors: {
-        background: "var(--background)",
-        foreground: "var(--foreground)",
+        background: "#FDF6EC",
+        cardBorder: "#547171",
+        primaryText: "#5C3D1D",
+        buttonBorder: "#A47A5A",
+        categoryRandom: "#E8A87C",
+        categorySchool: "#F2D388",
+        categoryPersonal: "#99B898",
+        buttonBackground: "#E8E4E1",
+        buttonHover: "#D6C7B9"
+      },
+      fontFamily: {
+        body: ["Inter", "sans-serif"],
+        title: ["Merriweather", "serif"],
       },
     },
   },
   plugins: [],
-} satisfies Config;
+};
+
+export default config;
