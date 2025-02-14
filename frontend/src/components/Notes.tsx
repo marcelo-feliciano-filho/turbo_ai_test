@@ -12,14 +12,22 @@ interface NotesProps {
   title: string;
   content: string;
   category: string;
-  lastEdited: string; // Expected format: "YYYY-MM-DD"
+  lastEdited: string; // Expected format: "YYYY-MM-DDTHH:mm:ss.sssZ"
 }
 
-const Notes: React.FC<NotesProps> = ({ title, content, category, lastEdited }) => {
-  const formattedDate = new Date(lastEdited).toLocaleDateString("en-US", {
-    month: "long",
-    day: "numeric",
-  });
+const Notes: React.FC<NotesProps> = ({title, content, category, lastEdited}) => {
+  // ✅ Ensure lastEdited is properly formatted before parsing
+  const formattedDate = lastEdited && !isNaN(Date.parse(lastEdited))
+    ? new Date(lastEdited).toLocaleString("en-US", {
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    })
+    : "Not saved yet";
+
 
   return (
     <div
@@ -29,11 +37,10 @@ const Notes: React.FC<NotesProps> = ({ title, content, category, lastEdited }) =
         border: `3px solid ${categories[category]}`,
       }}
     >
-      {/* Last Edited + Category */}
-      <p className="text-xs text-black mb-2">
-        <span className="font-bold text-[12px]">{formattedDate}</span>{" "}
-        <span className="text-[12px]">{category}</span>
-      </p>
+      {/* Last Edited + Category (Fixed structure) */}
+      <div className="text-xs text-black mb-2 text-right">
+        <span className="font-bold">{formattedDate}</span> • {category}
+      </div>
 
       {/* Note Title */}
       <h2 className="text-2xl font-bold text-black">{title}</h2>
