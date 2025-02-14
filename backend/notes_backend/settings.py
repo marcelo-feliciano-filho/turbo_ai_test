@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework_simplejwt",
     "rest_framework.authtoken",
+    "drf_yasg",
     "corsheaders",
     "authentication",
     "notes",
@@ -131,10 +132,10 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
-        'rest_framework.authentication.TokenAuthentication',
+        'rest_framework_simplejwt.authentication.JWTAuthentication',  # Keep only JWT
     ),
 }
+
 
 CORS_ALLOW_ALL_ORIGINS = True  # Allow all origins (for development)
 CORS_ALLOW_CREDENTIALS = True  # Allow cookies and authentication
@@ -143,5 +144,6 @@ CORS_ALLOWED_ORIGINS = [
 ]  # Allow frontend to access API
 CORS_ALLOW_METHODS = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
 CORS_ALLOW_HEADERS = ["*"]
+APPEND_SLASH = False
 
 AUTH_USER_MODEL = 'authentication.CustomUser'

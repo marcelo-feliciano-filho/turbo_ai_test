@@ -5,8 +5,18 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 from django.db import transaction
+from rest_framework_simplejwt.tokens import RefreshToken
+
 
 User = get_user_model()
+
+
+def get_tokens_for_user(user):
+    refresh = RefreshToken.for_user(user)
+    return {
+        'access': str(refresh.access_token),
+        'refresh': str(refresh)
+    }
 
 
 @api_view(['POST'])
@@ -55,7 +65,7 @@ class LoginView(APIView):
             if authenticated_user:
                 login(request, authenticated_user)
                 token, _ = Token.objects.get_or_create(user=authenticated_user)
-                return Response({'token': token.key, 'message': 'Login successful'}, status=status.HTTP_200_OK)
+                return Response(get_tokens_for_user(user), status=status.HTTP_200_OK)
 
             return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
 
