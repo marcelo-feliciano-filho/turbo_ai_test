@@ -1,79 +1,73 @@
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/router';
+import React, { useEffect, useState } from "react";
+import { useRouter } from "next/router";
+import CategoryList from "../components/CategoryList";
+import Notes from "../components/Notes";
+import EmptyState from "../components/EmptyState";
+import Button from "../components/Button";
 
-const dummyNotes = [
-  {
-    id: 1,
-    date: 'Today',
-    category: 'Random Thoughts',
-    title: 'Grocery List',
-    content: ['Milk', 'Eggs', 'Bread', 'Bananas', 'Spinach'],
-    color: '#F4A988',
-  },
-  {
-    id: 2,
-    date: 'Yesterday',
-    category: 'School',
-    title: 'Meeting with Team',
-    content: 'Discuss project timeline and milestones.',
-    color: '#F6DD8A',
-  },
-  {
-    id: 3,
-    date: 'July 16',
-    category: 'School',
-    title: 'Note Title',
-    content: 'Note content...',
-    color: '#F6DD8A',
-  },
-];
+// Define the API URL
+const API_URL = "http://127.0.0.1:8000/api/notes";
 
-export default function Home() {
+const IndexPage = () => {
   const router = useRouter();
-  const [notes, setNotes] = useState([]);
+  const [notes, setNotes] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const fetchNotes = async () => {
+      setLoading(true);
+      setError(null);
 
-    // If no token exists, redirect to signup
-    if (!token) {
-      router.push('/signup');
-      return;
-    }
+      try {
+        const response = await fetch(API_URL, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+          },
+        });
 
-    // Fetch notes from backend (Replace with actual API call later)
-    setNotes(dummyNotes);
-  }, [router]);
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        setNotes(Array.isArray(data) ? data : []);
+      } catch (err: any) {
+        setNotes([]); // Fallback to empty list
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchNotes();
+  }, []);
 
   return (
-    <div className="min-h-screen bg-[#FAF1E3] p-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-4xl font-bold text-[#88642A]">Your Notes</h1>
-        <button className="border rounded-xl px-4 py-2 text-[#88642A]" onClick={() => alert('New note created!')}>
-          + New Note
-        </button>
-      </div>
-      <div className="grid grid-cols-3 gap-6">
-        {notes.map((note) => (
-          <div
-            key={note.id}
-            className="p-4 rounded-lg shadow-md"
-            style={{ backgroundColor: note.color }}
-          >
-            <p className="text-xs font-bold">{note.date} - {note.category}</p>
-            <h2 className="text-xl font-bold mt-1">{note.title}</h2>
-            {Array.isArray(note.content) ? (
-              <ul className="mt-2 text-sm">
-                {note.content.map((item, index) => (
-                  <li key={index}>• {item}</li>
-                ))}
-              </ul>
-            ) : (
-              <p className="mt-2 text-sm">{note.content}</p>
-            )}
-          </div>
-        ))}
-      </div>
+    <div className="bg-[#FAF1E3] min-h-screen p-8 flex">
+      <aside className="w-1/4 pr-8">
+        <CategoryList />
+      </aside>
+
+      <main className="w-3/4 flex flex-col">
+        <div className="self-end mb-4">
+          <Button text="+ New Note" onClick={() => router.push("/notes")} />
+        </div>
+
+        {/* Loading state */}
+        {loading && <p>Loading notes...</p>}
+
+        {/* If notes exist, show them, otherwise show EmptyState */}
+        {!loading && notes.length > 0 ? (
+          <Notes notes={notes} />
+        ) : (
+          !loading && <EmptyState />
+        )}
+      </main>
     </div>
   );
-}
+};
+
+export default IndexPage;

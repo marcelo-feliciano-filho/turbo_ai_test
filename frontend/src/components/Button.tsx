@@ -1,19 +1,17 @@
-import React from 'react';
+import React from "react";
 
-type ButtonProps = {
-  label: string;
+interface ButtonProps {
   onClick: () => void;
-};
+  text: string;
+}
 
-const Button: React.FC<ButtonProps> = ({ label, onClick }) => {
+export default function Button({ onClick, text }: ButtonProps) {
   return (
     <button
-      className="bg-buttonBackground border-2 border-buttonBorder px-4 py-2 rounded-full text-primaryText hover:bg-buttonHover flex items-center gap-2"
+      className="border border-[#957139] rounded-xl px-4 py-2 text-[#88642A] hover:bg-[#f0e6d2] transition"
       onClick={onClick}
     >
-      <span>➕</span> {label}
+      {text}
     </button>
   );
-};
-
-export default Button;
+}
