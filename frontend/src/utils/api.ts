@@ -7,12 +7,12 @@ const API = axios.create({
 });
 
 export const loginUser = async (email, password) => {
-  const response = await API.post("/login", { email, password });
+  const response = await API.post("/auth/login", { email, password });
   return response.data;
 };
 
 export const signupUser = async (email, password) => {
-  const response = await API.post("/register", { email, password });
+  const response = await API.post("/auth/register", { email, password });
   return response.data;
 };
 
@@ -36,15 +36,19 @@ export const checkAuth = () => {
 };
 
 export const fetchNotes = async () => {
+  const token = localStorage.getItem("authToken");
+  if (!token) {
+    window.location.href = "/auth/login";
+    return [];
+  }
+  setAuthToken(token);
+
   try {
-    const { data } = await API.get("/");
-    return data;
+    const { data } = await API.get("/notes/");
+    return Array.isArray(data) ? data : [];
   } catch (error) {
-    if (error.response?.status === 401) {
-      setAuthToken(null);
-      window.location.href = "/auth/login";
-    }
-    throw new Error("Failed to load notes.");
+    console.error("Failed to load notes:", error);
+    return [];
   }
 };
 
