@@ -39,6 +39,9 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "rest_framework_simplejwt",
+    "rest_framework.authtoken",
+    "corsheaders",
+    "authentication",
     "notes",
 ]
 
@@ -50,6 +53,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
 ]
 
 ROOT_URLCONF = "notes_backend.urls"
@@ -128,8 +132,16 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework.authentication.TokenAuthentication',
     ),
 }
 
-AUTH_USER_MODEL = 'auth.User'
+CORS_ALLOW_ALL_ORIGINS = True  # Allow all origins (for development)
+CORS_ALLOW_CREDENTIALS = True  # Allow cookies and authentication
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+]  # Allow frontend to access API
+CORS_ALLOW_METHODS = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+CORS_ALLOW_HEADERS = ["*"]
 
+AUTH_USER_MODEL = 'authentication.CustomUser'

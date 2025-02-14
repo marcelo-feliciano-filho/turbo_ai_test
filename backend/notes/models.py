@@ -1,11 +1,18 @@
+from django.conf import settings
 from django.db import models
-from django.contrib.auth.models import User
 
 class Note(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)  # Links note to a user
+    CATEGORY_CHOICES = [
+        ('random_thoughts', 'Random Thoughts'),
+        ('personal', 'Personal'),
+        ('school', 'School'),
+        ('drama', 'Drama'),
+    ]
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     title = models.CharField(max_length=255)
     content = models.TextField()
-    created_at = models.DateTimeField(auto_now_add=True)
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='random_thoughts')
 
     def __str__(self):
-        return self.title
+        return f"{self.title} - {self.get_category_display()}"

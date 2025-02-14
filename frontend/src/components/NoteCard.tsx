@@ -15,7 +15,7 @@ const categoryColors: { [key: string]: string } = {
 
 export default function NoteCard({ title, content, category, date }: NoteProps) {
   return (
-    <div className="border-2 rounded-lg p-4 shadow-md bg-[#BFD8D5] border-cardBorder">
+    <div className={`border-2 rounded-lg p-4 shadow-md border-cardBorder ${categoryColors[category] || 'bg-gray-100'}`}> 
       <p className="text-sm text-primaryText font-bold">
         {date} <span className="font-normal">{category}</span>
       </p>
