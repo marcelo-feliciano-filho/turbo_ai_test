@@ -1,42 +1,106 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import CategoryList from "../components/CategoryList";
 import Button from "../components/Button";
+import EmptyState from "../components/EmptyState";
+import Notes from "../components/Notes";       // Your custom note display
+import { fetchNotes, Note } from "../utils/api";
 import { getAuthToken } from "../utils/helpers";
-import Image from "next/image";
 
-const IndexPage: React.FC = () => {
+export default function IndexPage() {
   const router = useRouter();
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState("All");
 
   useEffect(() => {
     if (!getAuthToken()) {
       router.replace("/auth/login");
+      return;
     }
+    (async () => {
+      try {
+        const allNotes = await fetchNotes();
+        setNotes(allNotes);
+
+        // Gather unique short-name categories from your notes
+        const uniqueCats = Array.from(new Set(allNotes.map((n) => n.category)));
+        setCategories(uniqueCats);
+      } catch (err) {
+        console.error("Failed to fetch notes:", err);
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, [router]);
 
   const handleNewNote = () => {
     router.push("/notes");
   };
 
+  if (loading) {
+    return (
+      <div className="bg-[#FAF1E3] min-h-screen p-8 flex justify-center items-center">
+        <p>Loading notes...</p>
+      </div>
+    );
+  }
+
+  // Filter notes if a category is selected
+  const filteredNotes =
+    selectedCategory === "All"
+      ? notes
+      : notes.filter((note) => note.category === selectedCategory);
+
   return (
     <div className="bg-[#FAF1E3] min-h-screen p-8 flex">
+      {/* LEFT SIDEBAR: dynamic CategoryList */}
       <aside className="w-1/4 pr-8">
-        <h2 className="font-bold text-lg mb-4">All Categories</h2>
-        <CategoryList />
+        <CategoryList
+          categories={categories}
+          selectedCategory={selectedCategory}
+          onSelect={setSelectedCategory}
+        />
       </aside>
 
-      <main className="w-3/4 flex flex-col relative">
-        <div className="self-end mb-4 z-50 relative">
+      {/* MAIN CONTENT */}
+      <main className="w-3/4 flex flex-col">
+        <div className="self-end mb-4">
           <Button text="+ New Note" onClick={handleNewNote} />
         </div>
 
-        <div className="absolute inset-0 flex flex-col items-center justify-center z-0">
-          <Image src="/cup.png" alt="No Notes Available" width={297} height={296} className="mb-4" />
-          <p className="text-lg text-[#88642A] text-center">I’m just here waiting for your charming notes...</p>
-        </div>
+        {/* No notes => show EmptyState */}
+        {filteredNotes.length === 0 ? (
+          <div className="flex-1 flex items-center justify-center">
+            <EmptyState />
+          </div>
+        ) : (
+          <div className="grid grid-cols-3 gap-4">
+            {filteredNotes.map((note) => (
+              <div
+                key={note.id}
+                onClick={() => router.push(`/notes?id=${note.id}`)}
+                className="cursor-pointer"
+              >
+                {/* Convert short name to pretty name if you want */}
+                <Notes
+                  title={note.title}
+                  content={note.content}
+                  category={
+                    note.category === "random_thoughts" ? "Random Thoughts"
+                    : note.category === "personal" ? "Personal"
+                    : note.category === "school" ? "School"
+                    : note.category === "drama" ? "Drama"
+                    : note.category
+                  }
+                  lastEdited={note.last_updated || ""}
+                />
+              </div>
+            ))}
+          </div>
+        )}
       </main>
     </div>
   );
-};
-
-export default IndexPage;
+}

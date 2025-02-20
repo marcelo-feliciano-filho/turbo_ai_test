@@ -6,21 +6,69 @@ const API = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
-// Authentication
+// Include access token if present
+API.interceptors.request.use((config) => {
+  const token = localStorage.getItem("authToken");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// Auto-refresh on 401
+API.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      try {
+        const refresh = localStorage.getItem("refreshToken");
+        if (!refresh) throw new Error("No refresh token");
+        // Attempt refresh
+        const { data } = await axios.post(`${API_URL}/auth/token/refresh/`, { refresh });
+        localStorage.setItem("authToken", data.access);
+        API.defaults.headers.common["Authorization"] = `Bearer ${data.access}`;
+        originalRequest.headers["Authorization"] = `Bearer ${data.access}`;
+        return API(originalRequest);
+      } catch {
+        // Refresh failed; force re-login
+        localStorage.removeItem("authToken");
+        localStorage.removeItem("refreshToken");
+        window.location.href = "/auth/login";
+      }
+    }
+
+    return Promise.reject(error);
+  }
+);
+
+export interface Note {
+  id: number;
+  title: string;
+  content: string;
+  category: string;
+  last_updated?: string;
+  created_at?: string;
+}
+
 interface AuthResponse {
   access: string;
   refresh: string;
 }
 
 export const loginUser = async (email: string, password: string): Promise<AuthResponse> => {
-  const response = await API.post<AuthResponse>("/auth/token/", { email, password });
-  return response.data;
+  const { data } = await API.post<AuthResponse>("/auth/token/", { email, password });
+  // Store refresh token so we can auto-refresh
+  localStorage.setItem("refreshToken", data.refresh);
+  return data;
 };
 
 export const signupUser = async (email: string, password: string): Promise<AuthResponse> => {
-  const response = await API.post<AuthResponse>("/auth/register/", { email, password });
-  console.log("Signup API Response:", response.data);
-  return response.data;
+  const { data } = await API.post<AuthResponse>("/auth/register/", { email, password });
+  localStorage.setItem("refreshToken", data.refresh);
+  return data;
 };
 
 export const setAuthToken = (token: string | null): void => {
@@ -33,47 +81,21 @@ export const setAuthToken = (token: string | null): void => {
   }
 };
 
-// Notes API
-export interface Note {
-  id: number;
-  title: string;
-  content: string;
-  category: string;
-  last_updated?: string;
-  created_at?: string;
-}
-
-export const fetchNoteById = async (id: number): Promise<Note> => {
-  try {
-    const { data } = await API.get<Note>(`/notes/${id}/`);
-    return data;
-  } catch {
-    throw new Error("Failed to load note.")
-  }
-};
-
-export const fetchNotes = async (): Promise<Note[]> => {
-  try {
-    const { data } = await API.get<Note[]>("/notes/");
-    return data;
-  } catch {
-    throw new Error("Failed to load notes.");
-  }
-};
-
+// Create or update a note
 export const saveNote = async (
   noteId: number | null,
   payload: { title: string; content: string; category: string }
 ): Promise<Note> => {
-  try {
-    let response;
-    if (noteId) {
-      response = await API.put<Note>(`/notes/${noteId}/`, payload);
-    } else {
-      response = await API.post<Note>("/notes/", payload);
-    }
-    return response.data;
-  } catch {
-    throw new Error("Failed to save note.");
+  const token = localStorage.getItem("authToken");
+  if (!token) throw new Error("No auth token.");
+
+  if (noteId) {
+    return (await API.put<Note>(`/notes/${noteId}/`, payload)).data;
+  } else {
+    return (await API.post<Note>("/notes/", payload)).data;
   }
+};
+
+export const fetchNotes = async (): Promise<Note[]> => {
+  return (await API.get<Note[]>("/notes/")).data;
 };

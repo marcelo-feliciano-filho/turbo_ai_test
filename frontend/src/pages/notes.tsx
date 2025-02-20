@@ -2,38 +2,36 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import CategoryDropdown from "../components/CategoryDropdown";
 import CloseButton from "../components/CloseButton";
-import { saveNote, fetchNotes } from "../utils/api"; // ✅ Correct import
+import { saveNote, fetchNotes } from "../utils/api";
 
 const categoryColors: Record<string, string> = {
-  "Random Thoughts": "#EF9C66",
-  Personal: "#78ABA8",
-  School: "#FCDC94",
-  Drama: "#C8CFA0",
+  random_thoughts: "#EF9C66",
+  personal:        "#78ABA8",
+  school:          "#FCDC94",
+  drama:           "#C8CFA0",
 };
 
-const NotesPage: React.FC = () => {
+export default function NotesPage() {
   const router = useRouter();
-  const [selectedCategory, setSelectedCategory] = useState<string>("Random Thoughts");
-  const [noteTitle, setNoteTitle] = useState<string>("");
-  const [noteContent, setNoteContent] = useState<string>("");
+  const [selectedCategory, setSelectedCategory] = useState("random_thoughts"); // short name
+  const [noteTitle, setNoteTitle] = useState("");
+  const [noteContent, setNoteContent] = useState("");
   const [noteId, setNoteId] = useState<number | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (!router.query.id) {
       setIsLoading(false);
       return;
     }
-
-    const loadNote = async () => {
+    (async () => {
       try {
-        const notes = await fetchNotes(); // ✅ Fetch all notes
-        const noteData = notes.find((note) => note.id === Number(router.query.id));
-
+        const notes = await fetchNotes();
+        const noteData = notes.find((n) => n.id === Number(router.query.id));
         if (noteData) {
           setNoteTitle(noteData.title);
           setNoteContent(noteData.content);
-          setSelectedCategory(noteData.category);
+          setSelectedCategory(noteData.category); // "random_thoughts", etc.
           setNoteId(noteData.id);
         } else {
           console.error("Note not found.");
@@ -43,23 +41,22 @@ const NotesPage: React.FC = () => {
       } finally {
         setIsLoading(false);
       }
-    };
-
-    loadNote();
+    })();
   }, [router.query.id]);
 
-  const handleSaveAndClose = async () => {
-    if (!noteTitle.trim() || !noteContent.trim()) {
-      return;
-    }
-
+  async function handleSaveAndClose() {
+    if (!noteTitle.trim() || !noteContent.trim()) return;
     try {
-      await saveNote(noteId, { title: noteTitle, content: noteContent, category: selectedCategory });
+      await saveNote(noteId, {
+        title: noteTitle,
+        content: noteContent,
+        category: selectedCategory, // short name
+      });
       router.push("/");
-    } catch {
-      console.error("Failed to save note.");
+    } catch (error) {
+      console.error("Failed to save note:", error);
     }
-  };
+  }
 
   if (isLoading) {
     return <p className="text-center mt-8">Loading...</p>;
@@ -74,7 +71,10 @@ const NotesPage: React.FC = () => {
 
       <div
         className="p-6 rounded-lg border shadow-lg mt-4"
-        style={{ backgroundColor: categoryColors[selectedCategory], borderColor: categoryColors[selectedCategory] }}
+        style={{
+          backgroundColor: categoryColors[selectedCategory],
+          borderColor: categoryColors[selectedCategory],
+        }}
       >
         <input
           type="text"
@@ -83,7 +83,6 @@ const NotesPage: React.FC = () => {
           onChange={(e) => setNoteTitle(e.target.value)}
           className="text-2xl font-bold bg-transparent border-none outline-none w-full"
         />
-
         <textarea
           placeholder="Pour your heart out..."
           value={noteContent}
@@ -93,6 +92,4 @@ const NotesPage: React.FC = () => {
       </div>
     </div>
   );
-};
-
-export default NotesPage;
+}
