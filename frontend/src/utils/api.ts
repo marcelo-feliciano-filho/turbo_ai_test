@@ -6,78 +6,74 @@ const API = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
-export const loginUser = async (email, password) => {
-  const response = await API.post("/auth/login", { email, password });
+// Authentication
+interface AuthResponse {
+  access: string;
+  refresh: string;
+}
+
+export const loginUser = async (email: string, password: string): Promise<AuthResponse> => {
+  const response = await API.post<AuthResponse>("/auth/token/", { email, password });
   return response.data;
 };
 
-export const signupUser = async (email, password) => {
-  const response = await API.post("/auth/register", { email, password });
+export const signupUser = async (email: string, password: string): Promise<AuthResponse> => {
+  const response = await API.post<AuthResponse>("/auth/register/", { email, password });
+  console.log("Signup API Response:", response.data);
   return response.data;
 };
 
-
-export const setAuthToken = (token) => {
+export const setAuthToken = (token: string | null): void => {
   if (token) {
     localStorage.setItem("authToken", token);
-    API.defaults.headers["Authorization"] = `Bearer ${token}`;
+    API.defaults.headers.common["Authorization"] = `Bearer ${token}`;
   } else {
     localStorage.removeItem("authToken");
-    delete API.defaults.headers["Authorization"];
+    delete API.defaults.headers.common["Authorization"];
   }
 };
 
-export const checkAuth = () => {
-  const token = localStorage.getItem("authToken");
-  if (!token) {
-    window.location.href = "/auth/login";
-  }
-  setAuthToken(token);
-};
+// Notes API
+export interface Note {
+  id: number;
+  title: string;
+  content: string;
+  category: string;
+  last_updated?: string;
+  created_at?: string;
+}
 
-export const fetchNotes = async () => {
-  const token = localStorage.getItem("authToken");
-  if (!token) {
-    window.location.href = "/auth/login";
-    return [];
-  }
-  setAuthToken(token);
-
+export const fetchNoteById = async (id: number): Promise<Note> => {
   try {
-    const { data } = await API.get("/notes/");
-    return Array.isArray(data) ? data : [];
-  } catch (error) {
-    console.error("Failed to load notes:", error);
-    return [];
+    const { data } = await API.get<Note>(`/notes/${id}/`);
+    return data;
+  } catch {
+    throw new Error("Failed to load note.")
   }
 };
 
-export const saveNote = async (noteId, payload) => {
+export const fetchNotes = async (): Promise<Note[]> => {
   try {
-    const response = await API({
-      method: noteId ? "PUT" : "POST",
-      url: noteId ? `/${noteId}/` : "/",
-      data: payload,
-    });
+    const { data } = await API.get<Note[]>("/notes/");
+    return data;
+  } catch {
+    throw new Error("Failed to load notes.");
+  }
+};
 
+export const saveNote = async (
+  noteId: number | null,
+  payload: { title: string; content: string; category: string }
+): Promise<Note> => {
+  try {
+    let response;
+    if (noteId) {
+      response = await API.put<Note>(`/notes/${noteId}/`, payload);
+    } else {
+      response = await API.post<Note>("/notes/", payload);
+    }
     return response.data;
-  } catch (error) {
-    throw new Error(`Failed to save note: ${error.response?.status}`);
+  } catch {
+    throw new Error("Failed to save note.");
   }
-};
-
-export const categoryMap = {
-  random_thoughts: "Random Thoughts",
-  personal: "Personal",
-  school: "School",
-  drama: "Drama",
-};
-
-export const reverseCategoryMap = Object.fromEntries(Object.entries(categoryMap).map(([k, v]) => [v, k]));
-
-export const categoryColors = {
-  "Random Thoughts": { bg: "#EF9C66", border: "#D67D4A" },
-  Personal: { bg: "#78ABA8", border: "#5E8E8B" },
-  School: { bg: "#FCDC94", border: "#D8B76B" },
-  Drama: { bg: "#C8CFA0", border: "#A3B27D" },
 };

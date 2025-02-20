@@ -1,92 +1,39 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { useRouter } from "next/router";
-import { fetchNotes, categoryMap, categoryColors } from "../utils/api";
-import { formatDate, checkAuth } from "../utils/helpers";
+import CategoryList from "../components/CategoryList";
 import Button from "../components/Button";
-import Notes from "../components/Notes";
-import EmptyState from "../components/EmptyState";
+import { getAuthToken } from "../utils/helpers";
+import Image from "next/image";
 
-const IndexPage = () => {
+const IndexPage: React.FC = () => {
   const router = useRouter();
-  const [notes, setNotes] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [categoryCounts, setCategoryCounts] = useState<{ [key: string]: number }>({});
 
   useEffect(() => {
-    const token = checkAuth(router);
-    if (!token) return;
+    if (!getAuthToken()) {
+      router.replace("/auth/login");
+    }
+  }, [router]);
 
-    const loadNotes = async () => {
-      setLoading(true);
-      setError(null);
-
-      const data = await fetchNotes();
-      if (data.length === 0) setError("Failed to load notes. Please check your API connection.");
-
-      setNotes(data);
-
-      // Count notes per category
-      const counts = data.reduce((acc: { [key: string]: number }, note: any) => {
-        const category = categoryMap[note.category] || "Random Thoughts";
-        acc[category] = (acc[category] || 0) + 1;
-        return acc;
-      }, {});
-
-      setCategoryCounts(counts);
-      setLoading(false);
-    };
-
-    loadNotes();
-  }, []);
-
-  const handleNoteClick = (noteId: string) => {
-    router.push(`/notes?id=${noteId}`);
+  const handleNewNote = () => {
+    router.push("/notes");
   };
 
   return (
     <div className="bg-[#FAF1E3] min-h-screen p-8 flex">
-      {/* Sidebar with category count */}
       <aside className="w-1/4 pr-8">
         <h2 className="font-bold text-lg mb-4">All Categories</h2>
-        {Object.entries(categoryCounts)
-          .filter(([_, count]) => count > 0)
-          .map(([category, count]) => (
-            <div key={category} className="flex justify-between items-center mb-2">
-              <span className="flex items-center">
-                <span className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: categoryColors[category].bg }} />
-                {category}
-              </span>
-              <span className="text-gray-700 font-bold">{count}</span>
-            </div>
-          ))}
+        <CategoryList />
       </aside>
 
-      {/* Main content */}
-      <main className="w-3/4 flex flex-col">
-        <div className="self-end mb-4">
-          <Button text="+ New Note" onClick={() => router.push("/notes")} />
+      <main className="w-3/4 flex flex-col relative">
+        <div className="self-end mb-4 z-50 relative">
+          <Button text="+ New Note" onClick={handleNewNote} />
         </div>
 
-        {loading && <p>Loading notes...</p>}
-        {error && <p className="text-red-600">{error}</p>}
-
-        {!loading && notes.length > 0 ? (
-          <div className="grid grid-cols-3 gap-4">
-            {notes.map((note) => (
-              <div key={note.id} onClick={() => handleNoteClick(note.id)} className="cursor-pointer">
-                <Notes
-                  title={note.title}
-                  content={note.content}
-                  category={categoryMap[note.category]}
-                  lastEdited={formatDate(note.last_updated)}
-                />
-              </div>
-            ))}
-          </div>
-        ) : (
-          !loading && <EmptyState />
-        )}
+        <div className="absolute inset-0 flex flex-col items-center justify-center z-0">
+          <Image src="/cup.png" alt="No Notes Available" width={297} height={296} className="mb-4" />
+          <p className="text-lg text-[#88642A] text-center">I’m just here waiting for your charming notes...</p>
+        </div>
       </main>
     </div>
   );

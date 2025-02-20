@@ -1,20 +1,11 @@
 import React from "react";
+import Image from "next/image";
 
-const EmptyState = () => {
+const EmptyState: React.FC = () => {
   return (
-    <div style={{
-        position: 'absolute',
-        top: '50%',
-        left: '50%',
-        transform: 'translate(-50%, -50%)',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center'
-    }}>
-      <img src="/cup.png" alt="No Notes Available" style={{ width: 297, height: 296 }} />
-      <p style={{ fontSize: 24, color: "#88642A", marginTop: 16 }}>
-        I’m just here waiting for your charming notes...
-      </p>
+    <div className="flex flex-col items-center justify-center h-full">
+      <Image src="/cup.png" alt="No Notes Available" width={297} height={296} priority />
+      <p className="text-xl text-[#88642A] mt-4">I’m just here waiting for your charming notes...</p>
     </div>
   );
 };
