@@ -68,4 +68,6 @@ Access API docs at:
 ---
 🌐 **GitHub:** [github.com/marcelo-feliciano-filho](https://github.com/marcelo-feliciano-filho)  
 
+📝 **Video:** [Turbo AI Application](https://youtu.be/cSysu6pSWlI)
+
 🚀 **Thank you for checking out Turbo AI Test!** 🚀
