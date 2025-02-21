@@ -1,95 +1,95 @@
-import React, { useEffect, useState } from "react";
-import { useRouter } from "next/router";
-import { fetchNotes, categoryMap, categoryColors } from "../utils/api";
-import { formatDate, checkAuth } from "../utils/helpers";
-import Button from "../components/Button";
-import Notes from "../components/Notes";
-import EmptyState from "../components/EmptyState";
+import React, { useEffect, useState } from "react"
+import { useRouter } from "next/router"
+import CategoryList from "../components/CategoryList"
+import Button from "../components/Button"
+import EmptyState from "../components/EmptyState"
+import Notes from "../components/Notes"
+import { fetchNotes, Note } from "../utils/api"
+import { getAuthToken } from "../utils/helpers"
 
-const IndexPage = () => {
-  const router = useRouter();
-  const [notes, setNotes] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [categoryCounts, setCategoryCounts] = useState<{ [key: string]: number }>({});
+export default function IndexPage() {
+  const router = useRouter()
+  const [notes, setNotes] = useState<Note[]>([])
+  const [loading, setLoading] = useState(true)
+  const [categories, setCategories] = useState<string[]>([])
+  const [selectedCategory, setSelectedCategory] = useState("All")
 
   useEffect(() => {
-    const token = checkAuth(router);
-    if (!token) return;
+    if (!getAuthToken()) {
+      router.replace("/auth/login")
+      return
+    }
+    ;(async () => {
+      try {
+        const allNotes = await fetchNotes()
+        setNotes(allNotes)
+        const uniqueCats = Array.from(new Set(allNotes.map((n) => n.category)))
+        setCategories(uniqueCats)
+      } finally {
+        setLoading(false)
+      }
+    })()
+  }, [router])
 
-    const loadNotes = async () => {
-      setLoading(true);
-      setError(null);
+  const categoryCounts = notes.reduce((acc, note) => {
+    if (!acc[note.category]) {
+      acc[note.category] = 0
+    }
+    acc[note.category]++
+    return acc
+  }, {} as Record<string, number>)
 
-      const data = await fetchNotes();
-      if (data.length === 0) setError("Failed to load notes. Please check your API connection.");
+  if (loading) {
+    return (
+      <div className="bg-[#FAF1E3] min-h-screen p-8 flex justify-center items-center">
+        <p>Loading notes...</p>
+      </div>
+    )
+  }
 
-      setNotes(data);
-
-      // Count notes per category
-      const counts = data.reduce((acc: { [key: string]: number }, note: any) => {
-        const category = categoryMap[note.category] || "Random Thoughts";
-        acc[category] = (acc[category] || 0) + 1;
-        return acc;
-      }, {});
-
-      setCategoryCounts(counts);
-      setLoading(false);
-    };
-
-    loadNotes();
-  }, []);
-
-  const handleNoteClick = (noteId: string) => {
-    router.push(`/notes?id=${noteId}`);
-  };
+  const filteredNotes =
+    selectedCategory === "All"
+      ? notes
+      : notes.filter((note) => note.category === selectedCategory)
 
   return (
     <div className="bg-[#FAF1E3] min-h-screen p-8 flex">
-      {/* Sidebar with category count */}
       <aside className="w-1/4 pr-8">
-        <h2 className="font-bold text-lg mb-4">All Categories</h2>
-        {Object.entries(categoryCounts)
-          .filter(([_, count]) => count > 0)
-          .map(([category, count]) => (
-            <div key={category} className="flex justify-between items-center mb-2">
-              <span className="flex items-center">
-                <span className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: categoryColors[category].bg }} />
-                {category}
-              </span>
-              <span className="text-gray-700 font-bold">{count}</span>
-            </div>
-          ))}
+        <CategoryList
+          categories={categories}
+          selectedCategory={selectedCategory}
+          onSelect={setSelectedCategory}
+          categoryCounts={categoryCounts}
+          totalCount={notes.length}
+        />
       </aside>
-
-      {/* Main content */}
       <main className="w-3/4 flex flex-col">
         <div className="self-end mb-4">
           <Button text="+ New Note" onClick={() => router.push("/notes")} />
         </div>
-
-        {loading && <p>Loading notes...</p>}
-        {error && <p className="text-red-600">{error}</p>}
-
-        {!loading && notes.length > 0 ? (
+        {filteredNotes.length === 0 ? (
+          <div className="flex-1 flex items-center justify-center">
+            <EmptyState />
+          </div>
+        ) : (
           <div className="grid grid-cols-3 gap-4">
-            {notes.map((note) => (
-              <div key={note.id} onClick={() => handleNoteClick(note.id)} className="cursor-pointer">
+            {filteredNotes.map((note) => (
+              <div
+                key={note.id}
+                onClick={() => router.push(`/notes?id=${note.id}`)}
+                className="cursor-pointer"
+              >
                 <Notes
                   title={note.title}
                   content={note.content}
-                  category={categoryMap[note.category]}
-                  lastEdited={formatDate(note.last_updated)}
+                  category={note.category}
+                  lastEdited={note.last_updated || ""}
                 />
               </div>
             ))}
           </div>
-        ) : (
-          !loading && <EmptyState />
         )}
       </main>
     </div>
-  );
-};
-
-export default IndexPage;
+  )
+}

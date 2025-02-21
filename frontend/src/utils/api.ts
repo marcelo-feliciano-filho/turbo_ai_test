@@ -6,78 +6,96 @@ const API = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
-export const loginUser = async (email, password) => {
-  const response = await API.post("/auth/login", { email, password });
-  return response.data;
+// Include access token if present
+API.interceptors.request.use((config) => {
+  const token = localStorage.getItem("authToken");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// Auto-refresh on 401
+API.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      try {
+        const refresh = localStorage.getItem("refreshToken");
+        if (!refresh) throw new Error("No refresh token");
+        // Attempt refresh
+        const { data } = await axios.post(`${API_URL}/auth/token/refresh/`, { refresh });
+        localStorage.setItem("authToken", data.access);
+        API.defaults.headers.common["Authorization"] = `Bearer ${data.access}`;
+        originalRequest.headers["Authorization"] = `Bearer ${data.access}`;
+        return API(originalRequest);
+      } catch {
+        // Refresh failed; force re-login
+        localStorage.removeItem("authToken");
+        localStorage.removeItem("refreshToken");
+        window.location.href = "/auth/login";
+      }
+    }
+
+    return Promise.reject(error);
+  }
+);
+
+export interface Note {
+  id: number;
+  title: string;
+  content: string;
+  category: string;
+  last_updated?: string;
+  created_at?: string;
+}
+
+interface AuthResponse {
+  access: string;
+  refresh: string;
+}
+
+export const loginUser = async (email: string, password: string): Promise<AuthResponse> => {
+  const { data } = await API.post<AuthResponse>("/auth/token/", { email, password });
+  // Store refresh token so we can auto-refresh
+  localStorage.setItem("refreshToken", data.refresh);
+  return data;
 };
 
-export const signupUser = async (email, password) => {
-  const response = await API.post("/auth/register", { email, password });
-  return response.data;
+export const signupUser = async (email: string, password: string): Promise<AuthResponse> => {
+  const { data } = await API.post<AuthResponse>("/auth/register/", { email, password });
+  localStorage.setItem("refreshToken", data.refresh);
+  return data;
 };
 
-
-export const setAuthToken = (token) => {
+export const setAuthToken = (token: string | null): void => {
   if (token) {
     localStorage.setItem("authToken", token);
-    API.defaults.headers["Authorization"] = `Bearer ${token}`;
+    API.defaults.headers.common["Authorization"] = `Bearer ${token}`;
   } else {
     localStorage.removeItem("authToken");
-    delete API.defaults.headers["Authorization"];
+    delete API.defaults.headers.common["Authorization"];
   }
 };
 
-export const checkAuth = () => {
+// Create or update a note
+export const saveNote = async (
+  noteId: number | null,
+  payload: { title: string; content: string; category: string }
+): Promise<Note> => {
   const token = localStorage.getItem("authToken");
-  if (!token) {
-    window.location.href = "/auth/login";
-  }
-  setAuthToken(token);
-};
+  if (!token) throw new Error("No auth token.");
 
-export const fetchNotes = async () => {
-  const token = localStorage.getItem("authToken");
-  if (!token) {
-    window.location.href = "/auth/login";
-    return [];
-  }
-  setAuthToken(token);
-
-  try {
-    const { data } = await API.get("/notes/");
-    return Array.isArray(data) ? data : [];
-  } catch (error) {
-    console.error("Failed to load notes:", error);
-    return [];
+  if (noteId) {
+    return (await API.put<Note>(`/notes/${noteId}/`, payload)).data;
+  } else {
+    return (await API.post<Note>("/notes/", payload)).data;
   }
 };
 
-export const saveNote = async (noteId, payload) => {
-  try {
-    const response = await API({
-      method: noteId ? "PUT" : "POST",
-      url: noteId ? `/${noteId}/` : "/",
-      data: payload,
-    });
-
-    return response.data;
-  } catch (error) {
-    throw new Error(`Failed to save note: ${error.response?.status}`);
-  }
-};
-
-export const categoryMap = {
-  random_thoughts: "Random Thoughts",
-  personal: "Personal",
-  school: "School",
-  drama: "Drama",
-};
-
-export const reverseCategoryMap = Object.fromEntries(Object.entries(categoryMap).map(([k, v]) => [v, k]));
-
-export const categoryColors = {
-  "Random Thoughts": { bg: "#EF9C66", border: "#D67D4A" },
-  Personal: { bg: "#78ABA8", border: "#5E8E8B" },
-  School: { bg: "#FCDC94", border: "#D8B76B" },
-  Drama: { bg: "#C8CFA0", border: "#A3B27D" },
+export const fetchNotes = async (): Promise<Note[]> => {
+  return (await API.get<Note[]>("/notes/")).data;
 };

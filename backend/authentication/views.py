@@ -27,11 +27,11 @@ def register_user(request):
     if not email or not password:
         return Response({'error': 'Email and password are required.'}, status=status.HTTP_400_BAD_REQUEST)
 
-    with transaction.atomic():  # Ensures database integrity
+    with transaction.atomic():
         user, created = User.objects.get_or_create(email=email, defaults={'username': email})
 
         if created:
-            user.set_password(password)  # Hash password
+            user.set_password(password)
             user.save()
         else:
             if not user.check_password(password):
@@ -42,10 +42,11 @@ def register_user(request):
         if authenticated_user is None:
             return Response({'error': 'Authentication failed after registration.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        token, _ = Token.objects.get_or_create(user=authenticated_user)
         login(request, authenticated_user)
 
-    return Response({'token': token.key}, status=status.HTTP_200_OK)
+        tokens = get_tokens_for_user(authenticated_user)
+
+    return Response(tokens, status=status.HTTP_200_OK)
 
 
 class LoginView(APIView):
