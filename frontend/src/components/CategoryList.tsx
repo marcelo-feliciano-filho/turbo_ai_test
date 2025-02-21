@@ -1,48 +1,67 @@
-import React from "react";
+// CategoryList.tsx
+import React from "react"
+import { categoryMap, defaultCategory } from "../utils/categoryMap"
 
 interface CategoryListProps {
-  categories: string[];        // e.g. ["random_thoughts", "personal", ...]
-  selectedCategory: string;    // e.g. "All" or "school"
-  onSelect: (cat: string) => void;
+  categories: string[]
+  selectedCategory: string
+  onSelect: (cat: string) => void
+  categoryCounts: Record<string, number>
+  totalCount: number
 }
-
-// Define a mapping for each category to its color
-const colorsPerCategory: Record<string, string> = {
-  All: "#6B4E3D",            // default color for "All"
-  random_thoughts: "#FF5733",
-  personal: "#33FFCE",
-  school: "#3370FF",
-  // add more category-color mappings as needed
-};
 
 export default function CategoryList({
   categories,
   selectedCategory,
   onSelect,
+  categoryCounts,
+  totalCount,
 }: CategoryListProps) {
-  // Prepend "All" to the list of categories
-  const allCategories = ["All", ...categories];
+  const allCategories = ["All", ...categories]
 
   return (
-    <div>
-      <h2
-        className="text-lg font-semibold mb-2"
-        style={{ color: colorsPerCategory["All"] }}
-      >
-        All Categories
-      </h2>
-      <ul>
-        {allCategories.map((cat) => (
-          <li
-            key={cat}
-            className={`mb-2 cursor-pointer ${cat === selectedCategory ? "font-bold underline" : ""}`}
-            onClick={() => onSelect(cat)}
-            style={{ color: colorsPerCategory[cat] || "#000" }} // default to black if no mapping exists
-          >
-            {cat}
-          </li>
-        ))}
-      </ul>
+    <div className="p-4 w-full">
+      <h2 className="text-lg font-semibold mb-4 text-gray-800">All Categories</h2>
+      <div className="flex flex-col gap-2">
+        {allCategories.map((cat) => {
+          const isSelected = cat === selectedCategory
+          if (cat === "All") {
+            return (
+              <div
+                key="All"
+                onClick={() => onSelect("All")}
+                className={`cursor-pointer rounded-md px-3 py-2 shadow-sm hover:shadow-md ${
+                  isSelected ? "ring-2 ring-black font-semibold" : ""
+                }`}
+                style={{ backgroundColor: "#DED7C5", color: "#333" }}
+              >
+                <div className="flex justify-between">
+                  <span>All</span>
+                  <span>{totalCount}</span>
+                </div>
+              </div>
+            )
+          }
+          const catKey = cat.toLowerCase()
+          const catData = categoryMap[catKey] || defaultCategory
+          const count = categoryCounts[cat] || 0
+          return (
+            <div
+              key={cat}
+              onClick={() => onSelect(cat)}
+              className={`cursor-pointer rounded-md px-3 py-2 shadow-sm hover:shadow-md ${
+                isSelected ? "ring-2 ring-black font-semibold" : ""
+              }`}
+              style={{ backgroundColor: catData.color, color: "#333" }}
+            >
+              <div className="flex justify-between">
+                <span>{catData.display}</span>
+                <span>{count}</span>
+              </div>
+            </div>
+          )
+        })}
+      </div>
     </div>
-  );
+  )
 }
