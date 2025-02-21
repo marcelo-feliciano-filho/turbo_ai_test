@@ -1,4 +1,3 @@
-// CategoryList.tsx
 import React from "react"
 import { categoryMap, defaultCategory } from "../utils/categoryMap"
 

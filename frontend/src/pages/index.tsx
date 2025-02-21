@@ -1,4 +1,3 @@
-// index.tsx
 import React, { useEffect, useState } from "react"
 import { useRouter } from "next/router"
 import CategoryList from "../components/CategoryList"

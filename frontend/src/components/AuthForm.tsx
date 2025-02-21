@@ -29,7 +29,7 @@ export default function AuthForm({
 }: AuthFormProps) {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen w-full bg-[#FAF1E3] font-[Inter]">
-      <Image src={mascot} alt="Mascot" width={95} height={113} className="mb-6" priority />
+      <Image src={mascot} alt="Mascot" width={188} height={134} className="mb-6" priority />
       <h1 className="text-[48px] font-[Inria Serif] font-bold text-[#957139] leading-[57.55px] mb-8">{title}</h1>
 
       {error && <p className="text-red-600">{error}</p>}

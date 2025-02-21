@@ -1,4 +1,3 @@
-// utils/categoryMap.ts
 export const categoryMap: Record<string, { display: string; color: string }> = {
   random_thoughts: {
     display: "random thoughts",
